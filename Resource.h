@@ -9,8 +9,13 @@
 #define IDC_PIXELV_BTN                  1002
 #define IDC_MEM_PIXEL_BTN               1003
 #define IDC_MEM_PIXELV_BTN              1004
-#define IDC_MEM_PIXELV_BTN2             1005
 #define IDC_MEM_DIRECT_BTN              1005
+#define IDC_R_PIXEL_BTN                 1006
+#define IDC_R_MEM_PIXEL_BTN             1007
+#define IDC_R_MEM_DIRECT_BTN            1008
+#define IDC_NOISE_START_BTN             1009
+#define IDC_PIXELV_BTN2                 1010
+#define IDC_NOISE_STOP_BTN              1010
 
 // Next default values for new objects
 // 

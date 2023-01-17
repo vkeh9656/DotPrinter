@@ -38,6 +38,13 @@ BEGIN_MESSAGE_MAP(CDotPrinterDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_MEM_PIXEL_BTN, &CDotPrinterDlg::OnBnClickedMemPixelBtn)
 	ON_BN_CLICKED(IDC_MEM_PIXELV_BTN, &CDotPrinterDlg::OnBnClickedMemPixelvBtn)
 	ON_BN_CLICKED(IDC_MEM_DIRECT_BTN, &CDotPrinterDlg::OnBnClickedMemDirectBtn)
+	ON_BN_CLICKED(IDC_R_PIXEL_BTN, &CDotPrinterDlg::OnBnClickedRPixelBtn)
+	ON_BN_CLICKED(IDC_R_MEM_PIXEL_BTN, &CDotPrinterDlg::OnBnClickedRMemPixelBtn)
+	
+	ON_BN_CLICKED(IDC_R_MEM_DIRECT_BTN, &CDotPrinterDlg::OnBnClickedRMemDirectBtn)
+	ON_BN_CLICKED(IDC_NOISE_START_BTN, &CDotPrinterDlg::OnBnClickedNoiseStartBtn)
+	ON_BN_CLICKED(IDC_NOISE_STOP_BTN, &CDotPrinterDlg::OnBnClickedNoiseStopBtn)
+	ON_WM_TIMER()
 END_MESSAGE_MAP()
 
 
@@ -59,6 +66,7 @@ BOOL CDotPrinterDlg::OnInitDialog()
 	mp_image_data = (unsigned int *)m_my_image.GetBits(); // 첫 줄 제일 위 (0,0)
 	mp_image_data += m_bmp_info.bmWidthBytes / sizeof(unsigned int); // 에서 맨 끝으로 이동 ,4의 배수로 나눈 정수
 	
+	srand((unsigned int)time(NULL));
 	// CDC* p_dc = CDC::FromHandle(h_dc); // 임시 객체 생성
 
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
@@ -219,7 +227,127 @@ void CDotPrinterDlg::OnBnClickedMemDirectBtn()
 	}*/
 
 	int end_tick = GetTickCount();
-	AddTimeToList(L"CImage SetPixelV 사용 - 출력 전", end_tick - start_tick);
+	AddTimeToList(L"CImage 직접 출력 사용 - 출력 전", end_tick - start_tick);
 	m_my_image.Draw(dc, 0, 0);
-	AddTimeToList(L"CImage SetPixelV 사용 - 출력 후", end_tick - start_tick);
+	AddTimeToList(L"CImage 직접 출력 사용 - 출력 후", end_tick - start_tick);
+}
+
+
+void CDotPrinterDlg::OnBnClickedRPixelBtn()
+{
+	CClientDC dc(this);
+
+	int limit = m_bmp_info.bmWidth * m_bmp_info.bmHeight;
+	int start_tick = GetTickCount(), x, y;
+	
+	for (int i = 0; i < 100000; i++)
+	{
+		x = rand() % m_bmp_info.bmWidth;
+		y = rand() % m_bmp_info.bmHeight;
+		dc.SetPixel(x, y, RGB(rand()%256, rand() % 256, rand() % 256));
+	}
+
+	int end_tick = GetTickCount();
+	AddTimeToList(L"난수 SetPixel 사용", end_tick - start_tick);
+	
+}
+
+
+
+void CDotPrinterDlg::OnBnClickedRMemPixelBtn()
+{
+	CClientDC dc(this);
+
+	int limit = m_bmp_info.bmWidth * m_bmp_info.bmHeight;
+	int start_tick = GetTickCount(), x, y;
+
+	for (int i = 0; i < 100000; i++)
+	{
+		x = rand() % m_bmp_info.bmWidth;
+		y = rand() % m_bmp_info.bmHeight;
+		m_my_dc.SetPixel(x, y, RGB(rand() % 256, rand() % 256, rand() % 256));
+	}
+
+
+	int end_tick = GetTickCount();
+	AddTimeToList(L"(CImage) 난수 SetPixel 사용 - 출력 전", end_tick - start_tick);
+	m_my_image.Draw(dc, 0, 0);
+	AddTimeToList(L"(CImage) 난수 SetPixel 사용 - 출력 후", end_tick - start_tick);
+}
+
+
+
+void CDotPrinterDlg::OnBnClickedRMemDirectBtn()
+{
+	CClientDC dc(this);
+
+	unsigned int* p = mp_image_data;
+	int start_tick = GetTickCount(), x, y;
+
+	for (int i = 0; i < 100000; i++)
+	{
+		x = rand() % m_bmp_info.bmWidth;
+		y = rand() % m_bmp_info.bmHeight;
+		*(p - (m_bmp_info.bmWidth - x) - y * m_bmp_info.bmWidth)= RGB(rand() % 256, rand() % 256, rand() % 256);
+	}
+
+	int end_tick = GetTickCount();
+	AddTimeToList(L"(CImage) 난수 직접 출력 사용 - 출력 전", end_tick - start_tick);
+	m_my_image.Draw(dc, 0, 0);
+	AddTimeToList(L"(CImage) 난수 직접 출력 사용 - 출력 후", end_tick - start_tick);
+}
+
+
+void CDotPrinterDlg::OnBnClickedNoiseStartBtn()
+{
+	SetTimer(1, 1, NULL);
+}
+
+
+void CDotPrinterDlg::OnBnClickedNoiseStopBtn()
+{
+	KillTimer(1);
+}
+
+
+void CDotPrinterDlg::OnTimer(UINT_PTR nIDEvent)
+{
+	if (nIDEvent == 1)
+	{
+		/*CClientDC dc(this);
+
+		int start_tick = GetTickCount();
+		for (int y = 0; y < m_bmp_info.bmHeight; y++)
+		{
+			for (int x = 0; x < m_bmp_info.bmWidth; x++)
+			{
+				x = rand() % m_bmp_info.bmWidth;
+				y = rand() % m_bmp_info.bmHeight;
+				m_my_dc.SetPixel(x, y, RGB(rand()%256, rand() % 256, rand() % 256));
+			}
+		}
+		m_my_image.Draw(dc, 0, 0);*/
+
+
+
+		CClientDC dc(this);
+
+		unsigned int* p = mp_image_data;
+		int start_tick = GetTickCount(), x, y;
+
+		for (int i = 0; i < 100000; i++)
+		{
+			x = rand() % m_bmp_info.bmWidth;
+			y = rand() % m_bmp_info.bmHeight;
+			*(p - (m_bmp_info.bmWidth - x) - y * m_bmp_info.bmWidth) = RGB(rand() % 256, rand() % 256, rand() % 256);
+		}
+
+		int end_tick = GetTickCount();
+		
+		m_my_image.Draw(dc, 0, 0);
+		
+
+	}
+
+	CDialogEx::OnTimer(nIDEvent);
 }

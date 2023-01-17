@@ -45,4 +45,11 @@ public:
 	afx_msg void OnBnClickedMemPixelBtn();
 	afx_msg void OnBnClickedMemPixelvBtn();
 	afx_msg void OnBnClickedMemDirectBtn();
+	afx_msg void OnBnClickedRPixelBtn();
+	afx_msg void OnBnClickedRMemPixelBtn();
+	
+	afx_msg void OnBnClickedRMemDirectBtn();
+	afx_msg void OnBnClickedNoiseStartBtn();
+	afx_msg void OnBnClickedNoiseStopBtn();
+	afx_msg void OnTimer(UINT_PTR nIDEvent);
 };
