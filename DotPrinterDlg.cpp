@@ -26,11 +26,18 @@ CDotPrinterDlg::CDotPrinterDlg(CWnd* pParent /*=nullptr*/)
 void CDotPrinterDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
+	DDX_Control(pDX, IDC_MSG_LIST, m_msg_list);
 }
 
 BEGIN_MESSAGE_MAP(CDotPrinterDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
+	ON_BN_CLICKED(IDC_PIXEL_BTN, &CDotPrinterDlg::OnBnClickedPixelBtn)
+	ON_BN_CLICKED(IDC_PIXELV_BTN, &CDotPrinterDlg::OnBnClickedPixelvBtn)
+	ON_WM_DESTROY()
+	ON_BN_CLICKED(IDC_MEM_PIXEL_BTN, &CDotPrinterDlg::OnBnClickedMemPixelBtn)
+	ON_BN_CLICKED(IDC_MEM_PIXELV_BTN, &CDotPrinterDlg::OnBnClickedMemPixelvBtn)
+	ON_BN_CLICKED(IDC_MEM_DIRECT_BTN, &CDotPrinterDlg::OnBnClickedMemDirectBtn)
 END_MESSAGE_MAP()
 
 
@@ -45,7 +52,14 @@ BOOL CDotPrinterDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// 큰 아이콘을 설정합니다.
 	SetIcon(m_hIcon, FALSE);		// 작은 아이콘을 설정합니다.
 
-	// TODO: 여기에 추가 초기화 작업을 추가합니다.
+	m_my_image.Create(450, 400, 32);
+	m_my_dc.Attach(m_my_image.GetDC());	// 영구 객체 생성
+
+	GetObject((HBITMAP)m_my_image, sizeof(BITMAP), &m_bmp_info);
+	mp_image_data = (unsigned int *)m_my_image.GetBits(); // 첫 줄 제일 위 (0,0)
+	mp_image_data += m_bmp_info.bmWidthBytes / sizeof(unsigned int); // 에서 맨 끝으로 이동 ,4의 배수로 나눈 정수
+	
+	// CDC* p_dc = CDC::FromHandle(h_dc); // 임시 객체 생성
 
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
@@ -86,3 +100,126 @@ HCURSOR CDotPrinterDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
+
+void CDotPrinterDlg::AddTimeToList(const wchar_t* ap_msg, int a_time_value)
+{
+	CString str;
+	str.Format(L"%s : %d", ap_msg, a_time_value);
+	int index = m_msg_list.InsertString(-1, str);
+	m_msg_list.SetCurSel(index);
+}
+
+void CDotPrinterDlg::OnBnClickedPixelBtn()
+{
+	CClientDC dc(this);
+
+	int start_tick = GetTickCount();
+	for (int y = 0; y < m_bmp_info.bmHeight; y++)
+	{
+		for (int x = 0; x < m_bmp_info.bmWidth; x++)
+		{
+			dc.SetPixel(x, y, RGB(0, 0, 255));
+		}
+	}
+
+	int end_tick = GetTickCount();
+	AddTimeToList(L"SetPixel 사용", end_tick - start_tick);
+	
+	
+}
+
+
+void CDotPrinterDlg::OnBnClickedPixelvBtn()
+{
+	CClientDC dc(this);
+
+	int start_tick = GetTickCount();
+	for (int y = 0; y < m_bmp_info.bmHeight; y++)
+	{
+		for (int x = 0; x < m_bmp_info.bmWidth; x++)
+		{
+			dc.SetPixelV(x, y, RGB(0, 255, 0));
+		}
+	}
+
+	int end_tick = GetTickCount();
+	AddTimeToList(L"SetPixelV 사용", end_tick - start_tick);
+}
+
+
+void CDotPrinterDlg::OnDestroy()
+{
+	CDialogEx::OnDestroy();
+
+	m_my_dc.Detach();
+	m_my_image.ReleaseDC();
+}
+
+
+void CDotPrinterDlg::OnBnClickedMemPixelBtn()
+{
+	CClientDC dc(this);
+
+	int start_tick = GetTickCount();
+	for (int y = 0; y < m_bmp_info.bmHeight; y++)
+	{
+		for (int x = 0; x < m_bmp_info.bmWidth; x++)
+		{
+			m_my_dc.SetPixel(x, y, RGB(0, 255, 255));
+		}
+	}
+
+	int end_tick = GetTickCount();
+	AddTimeToList(L"CImage SetPixel 사용 - 출력 전", end_tick - start_tick);
+	m_my_image.Draw(dc, 0, 0);
+	AddTimeToList(L"CImage SetPixel 사용 - 출력 후", end_tick - start_tick);
+}
+
+
+void CDotPrinterDlg::OnBnClickedMemPixelvBtn()
+{
+	CClientDC dc(this);
+
+	int start_tick = GetTickCount();
+	for (int y = 0; y < m_bmp_info.bmHeight; y++)
+	{
+		for (int x = 0; x < m_bmp_info.bmWidth; x++)
+		{
+			m_my_dc.SetPixelV(x, y, RGB(255, 0, 255));
+		}
+	}
+
+	int end_tick = GetTickCount();
+	AddTimeToList(L"CImage SetPixelV 사용 - 출력 전", end_tick - start_tick);
+	m_my_image.Draw(dc, 0, 0);
+	AddTimeToList(L"CImage SetPixelV 사용 - 출력 후", end_tick - start_tick);
+}
+
+
+void CDotPrinterDlg::OnBnClickedMemDirectBtn()
+{
+	CClientDC dc(this);
+
+	unsigned int* p = mp_image_data;
+	int count = m_bmp_info.bmWidth * m_bmp_info.bmHeight;
+	int start_tick = GetTickCount();
+
+	for (int i = 0; i < count; i++)
+	{
+		// *p = 0xAARRGGBB
+		*p = 0x00FF0000; // 빨간색
+		p--;
+	}
+	/*for (int y = 0; y < 400; y++)
+	{
+		for (int x = 0; x < 450; x++)
+		{
+			m_my_dc.SetPixelV(x, y, RGB(255, 0, 255));
+		}
+	}*/
+
+	int end_tick = GetTickCount();
+	AddTimeToList(L"CImage SetPixelV 사용 - 출력 전", end_tick - start_tick);
+	m_my_image.Draw(dc, 0, 0);
+	AddTimeToList(L"CImage SetPixelV 사용 - 출력 후", end_tick - start_tick);
+}
